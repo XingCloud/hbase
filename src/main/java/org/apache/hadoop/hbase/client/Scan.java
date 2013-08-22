@@ -100,6 +100,10 @@ public class Scan extends OperationWithAttributes implements Writable {
   // scan.setAttribute(Scan.SCAN_ATTRIBUTES_TABLE_NAME, Bytes.toBytes(tableName))
   static public final String SCAN_ATTRIBUTES_TABLE_NAME = "scan.attributes.table.name";
 
+  //只读memstore/hfiles
+  private boolean memOnly=false;
+  private boolean filesOnly=false;
+
   /*
    * -1 means no caching
    */
@@ -155,6 +159,10 @@ public class Scan extends OperationWithAttributes implements Writable {
     caching = scan.getCaching();
     cacheBlocks = scan.getCacheBlocks();
     filter = scan.getFilter(); // clone?
+
+    memOnly = scan.isMemOnly();
+    filesOnly = scan.isFilesOnly();
+
     TimeRange ctr = scan.getTimeRange();
     tr = new TimeRange(ctr.getMin(), ctr.getMax());
     Map<byte[], NavigableSet<byte[]>> fams = scan.getFamilyMap();
@@ -463,7 +471,23 @@ public class Scan extends OperationWithAttributes implements Writable {
     return cacheBlocks;
   }
 
-  /**
+    public boolean isMemOnly() {
+        return memOnly;
+    }
+
+    public void setMemOnly(boolean memOnly) {
+        this.memOnly = memOnly;
+    }
+
+    public boolean isFilesOnly() {
+        return filesOnly;
+    }
+
+    public void setFilesOnly(boolean filesOnly) {
+        this.filesOnly = filesOnly;
+    }
+
+    /**
    * Set the value indicating whether loading CFs on demand should be allowed (cluster
    * default is false). On-demand CF loading doesn't load column families until necessary, e.g.
    * if you filter on one column, the other column family data will be loaded only for the rows
@@ -536,6 +560,11 @@ public class Scan extends OperationWithAttributes implements Writable {
     map.put("batch", this.batch);
     map.put("caching", this.caching);
     map.put("cacheBlocks", this.cacheBlocks);
+
+    map.put("memOnly", this.memOnly);
+    map.put("filesOnly", this.filesOnly);
+
+
     List<Long> timeRange = new ArrayList<Long>();
     timeRange.add(this.tr.getMin());
     timeRange.add(this.tr.getMax());
@@ -598,6 +627,10 @@ public class Scan extends OperationWithAttributes implements Writable {
     this.batch = in.readInt();
     this.caching = in.readInt();
     this.cacheBlocks = in.readBoolean();
+
+    this.memOnly = in.readBoolean();
+    this.filesOnly = in.readBoolean();
+
     if(in.readBoolean()) {
       this.filter = (Filter)createForName(Bytes.toString(Bytes.readByteArray(in)));
       this.filter.readFields(in);
@@ -632,6 +665,11 @@ public class Scan extends OperationWithAttributes implements Writable {
     out.writeInt(this.batch);
     out.writeInt(this.caching);
     out.writeBoolean(this.cacheBlocks);
+
+    out.writeBoolean(this.memOnly);
+    out.writeBoolean(this.filesOnly);
+
+
     if(this.filter == null) {
       out.writeBoolean(false);
     } else {

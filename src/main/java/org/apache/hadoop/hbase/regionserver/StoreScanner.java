@@ -235,8 +235,10 @@ public class StoreScanner extends NonLazyKeyValueScanner
       memOnly = iscan.isCheckOnlyMemStore();
       filesOnly = iscan.isCheckOnlyStoreFiles();
     } else {
-      memOnly = false;
-      filesOnly = false;
+      memOnly = scan.isMemOnly();
+      filesOnly = scan.isFilesOnly();
+//      LOG.debug(store.getHRegion().getRegionNameAsString() + "scan is scan,memOnly:" + memOnly + "filesOnly:" +
+//                filesOnly);
     }
 
     List<KeyValueScanner> scanners =
