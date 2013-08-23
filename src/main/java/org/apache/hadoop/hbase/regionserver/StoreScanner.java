@@ -72,6 +72,8 @@ public class StoreScanner extends NonLazyKeyValueScanner
 
   // if heap == null and lastTop != null, you need to reseek given the key below
   private KeyValue lastTop = null;
+  
+  private boolean justFlush = false;
 
   /** An internal constructor. */
   private StoreScanner(Store store, boolean cacheBlocks, Scan scan,
@@ -313,6 +315,13 @@ public class StoreScanner extends NonLazyKeyValueScanner
     return next(outResult, limit, null);
   }
 
+  private void markFlush(List<KeyValue> outResult){
+    if(justFlush && scan.isMemOnly()){
+      outResult.add(new KeyValue(Bytes.toBytes("flush"), store.getFamily().getName(), null));
+      justFlush = false;
+    }
+  }
+  
   /**
    * Get the next row of values from this Store.
    * @param outResult
@@ -322,7 +331,9 @@ public class StoreScanner extends NonLazyKeyValueScanner
   @Override
   public synchronized boolean next(List<KeyValue> outResult, int limit,
       String metric) throws IOException {
-
+    
+    markFlush(outResult);
+    
     if (checkReseek()) {
       return true;
     }
@@ -360,6 +371,9 @@ public class StoreScanner extends NonLazyKeyValueScanner
     int count = 0;
     try {
       LOOP: while((kv = this.heap.peek()) != null) {
+        
+        markFlush(outResult);
+        
         // Check that the heap gives us KVs in an increasing order.
         assert prevKV == null || comparator == null || comparator.compare(prevKV, kv) <= 0 :
           "Key " + prevKV + " followed by a " + "smaller key " + kv + " in cf " + store;
@@ -373,7 +387,7 @@ public class StoreScanner extends NonLazyKeyValueScanner
             Filter f = matcher.getFilter();
             outResult.add(f == null ? kv : f.transform(kv));
             count++;
-
+            
             if (qcode == ScanQueryMatcher.MatchCode.INCLUDE_AND_SEEK_NEXT_ROW) {
               if (!matcher.moreRowsMayExistAfter(kv)) {
                 return false;
@@ -496,6 +510,7 @@ public class StoreScanner extends NonLazyKeyValueScanner
         this.lastTop = null;
         return true;
       }
+      this.justFlush = true;
       this.lastTop = null; // gone!
     }
     // else dont need to reseek
