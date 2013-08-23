@@ -317,7 +317,7 @@ public class HTablePool implements Closeable {
    * wrapped table back to the table pool
    *
    */
-  class PooledHTable implements HTableInterface {
+  public class PooledHTable implements HTableInterface {
 
     private HTableInterface table; // actual table implementation
 
@@ -505,7 +505,7 @@ public class HTablePool implements Closeable {
      * 
      * @return wrapped htable
      */
-    HTableInterface getWrappedTable() {
+    public HTableInterface getWrappedTable() {
       return table;
     }
 
