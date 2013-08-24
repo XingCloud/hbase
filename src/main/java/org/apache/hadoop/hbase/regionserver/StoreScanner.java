@@ -491,7 +491,9 @@ public class StoreScanner extends NonLazyKeyValueScanner
     // close scanners to old obsolete Store files
     this.heap.close(); // bubble thru and close all scanners.
     this.heap = null; // the re-seeks could be slow (access HDFS) free up memory ASAP
-
+    
+    this.justFlush = true;
+    
     // Let the next() call handle re-creating and seeking
   }
 
@@ -510,7 +512,6 @@ public class StoreScanner extends NonLazyKeyValueScanner
         this.lastTop = null;
         return true;
       }
-      this.justFlush = true;
       this.lastTop = null; // gone!
     }
     // else dont need to reseek
